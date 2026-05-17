@@ -1209,33 +1209,83 @@ async function loadCandidates(jobId) {
     }
 
     container.innerHTML = data.length
-      ? data.map((candidate) => `
-        <article class="job-card">
-          <div class="job-head">
+    ? data.map((candidate) => `
+      <article class="job-card candidate-card">
+  
+        <div class="job-head">
+          <div>
+            <span class="tag">${candidate.status || "Postulado"}</span>
+            <h3>${candidate.candidate_name}</h3>
+            <p>${candidate.candidate_email}</p>
+          </div>
+  
+          <div class="score-box">
+            <div class="score ${scoreClass(candidate.match_score || 0)}">
+              ${candidate.match_score || 0}%
+            </div>
+  
+            <span class="compatibility-tag ${getCompatibilityClass(candidate.match_score || 0)}">
+              ${getCompatibilityLabel(candidate.match_score || 0)}
+            </span>
+          </div>
+        </div>
+  
+        <p><strong>Ciudad:</strong> ${candidate.city || "No registrada"}</p>
+        <p><strong>Profesión:</strong> ${candidate.profession || "No registrada"}</p>
+        <p><strong>Skills:</strong> ${candidate.skills || "No registradas"}</p>
+  
+        <div class="candidate-match-box">
+          <strong>Explicación del match:</strong>
+          <p>${candidate.match_explanation || "No hay explicación disponible."}</p>
+  
+          <div class="mini-skills-grid">
             <div>
-              <span class="tag">${candidate.status}</span>
-              <h3>${candidate.candidate_name}</h3>
-              <p>${candidate.candidate_email}</p>
+              <strong>Coincide:</strong>
+              <p>
+                ${
+                  candidate.matchedSkills?.length
+                    ? candidate.matchedSkills.join(", ")
+                    : "Sin coincidencias exactas"
+                }
+              </p>
+            </div>
+  
+            <div>
+              <strong>Por fortalecer:</strong>
+              <p>
+                ${
+                  candidate.missingSkills?.length
+                    ? candidate.missingSkills.join(", ")
+                    : "Cumple las habilidades principales"
+                }
+              </p>
             </div>
           </div>
-          <p><strong>Ciudad:</strong> ${candidate.city || "No registrada"}</p>
-          <p><strong>Profesión:</strong> ${candidate.profession || "No registrada"}</p>
-          <p><strong>Skills:</strong> ${candidate.skills || "No registradas"}</p>
-          <p><strong>Mensaje:</strong> ${candidate.cover_message || "Sin mensaje adicional"}</p>
-          ${candidate.cv_filename ? `<p><a href="/uploads/${candidate.cv_filename}" target="_blank">Ver CV: ${candidate.cv_original_name || "CV"}</a></p>` : "<p>No hay CV adjunto.</p>"}
-          <div class="card-actions">
-            <select id="status-${candidate.application_id}">
-              <option ${candidate.status === "Postulado" ? "selected" : ""}>Postulado</option>
-              <option ${candidate.status === "En revisión" ? "selected" : ""}>En revisión</option>
-              <option ${candidate.status === "Entrevista" ? "selected" : ""}>Entrevista</option>
-              <option ${candidate.status === "Seleccionado" ? "selected" : ""}>Seleccionado</option>
-              <option ${candidate.status === "Descartado" ? "selected" : ""}>Descartado</option>
-            </select>
-            <button type="button" onclick="updateApplicationStatus(${candidate.application_id}, ${jobId})">Actualizar estado</button>
-          </div>
-        </article>
-      `).join("")
-      : "<p>Esta vacante aún no tiene candidatos.</p>";
+        </div>
+  
+        <p><strong>Mensaje:</strong> ${candidate.cover_message || "Sin mensaje adicional"}</p>
+  
+        ${
+          candidate.cv_filename
+            ? `<p><a href="${API}/uploads/${candidate.cv_filename}" target="_blank">Ver CV: ${candidate.cv_original_name || "Hoja de vida"}</a></p>`
+            : `<p>No hay CV adjunto.</p>`
+        }
+  
+        <select id="status-${candidate.application_id}">
+          <option value="Postulado" ${candidate.status === "Postulado" ? "selected" : ""}>Postulado</option>
+          <option value="En revisión" ${candidate.status === "En revisión" ? "selected" : ""}>En revisión</option>
+          <option value="Entrevista" ${candidate.status === "Entrevista" ? "selected" : ""}>Entrevista</option>
+          <option value="Seleccionado" ${candidate.status === "Seleccionado" ? "selected" : ""}>Seleccionado</option>
+          <option value="Rechazado" ${candidate.status === "Rechazado" ? "selected" : ""}>Rechazado</option>
+        </select>
+  
+        <button onclick="updateApplicationStatus(${candidate.application_id})">
+          Actualizar estado
+        </button>
+  
+      </article>
+    `).join("")
+    : "<p>No hay candidatos postulados.</p>";
   } catch (error) {
     container.innerHTML = `<p class="message">${error.message}</p>`;
   }

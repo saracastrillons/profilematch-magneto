@@ -997,6 +997,19 @@ app.patch("/api/recruiter/jobs/:id/status", requireAuth, requireRecruiter, async
 
 app.get("/api/recruiter/jobs/:id/applications", requireAuth, requireRecruiter, async (req, res) => {
   try {
+    const jobId = req.params.id;
+
+    const [jobRows] = await db.query(
+      "SELECT * FROM jobs WHERE id = ? AND created_by = ?",
+      [jobId, req.user.id]
+    );
+
+    if (!jobRows.length) {
+      return res.status(404).json({ message: "Vacante no encontrada." });
+    }
+
+    const job = jobRows[0];
+
     const [rows] = await db.query(
       `
       SELECT
@@ -1004,34 +1017,50 @@ app.get("/api/recruiter/jobs/:id/applications", requireAuth, requireRecruiter, a
         applications.status,
         applications.cover_message,
         applications.created_at,
+
         users.id AS candidate_id,
         users.name AS candidate_name,
         users.email AS candidate_email,
         users.cv_filename,
         users.cv_original_name,
+
         profiles.city,
+        profiles.profession,
+        profiles.skills,
         profiles.modality,
         profiles.seniority,
         profiles.salary_min,
-        profiles.profession,
-        profiles.education,
         profiles.years_experience,
-        profiles.skills,
         profiles.linkedin,
         profiles.github
       FROM applications
       INNER JOIN users ON applications.user_id = users.id
-      LEFT JOIN profiles ON users.id = profiles.user_id
-      INNER JOIN jobs ON applications.job_id = jobs.id
-      WHERE applications.job_id = ? AND jobs.created_by = ?
+      LEFT JOIN profiles ON profiles.user_id = users.id
+      WHERE applications.job_id = ?
       ORDER BY applications.created_at DESC
       `,
-      [req.params.id, req.user.id]
+      [jobId]
     );
-    res.json(rows);
+
+    const candidates = rows
+      .map((candidate) => {
+        const match = calculateMatch(candidate, job);
+
+        return {
+          ...candidate,
+          match_score: match.score,
+          match_level: match.level,
+          match_explanation: match.explanation,
+          matchedSkills: match.matchedSkills,
+          missingSkills: match.missingSkills
+        };
+      })
+      .sort((a, b) => b.match_score - a.match_score);
+
+    res.json(candidates);
   } catch (error) {
-    console.error("Error recruiter candidates:", error);
-    res.status(500).json({ message: "Error al cargar candidatos." });
+    console.error("Error recruiter applications:", error);
+    res.status(500).json({ message: "Error al cargar candidatos postulados." });
   }
 });
 
