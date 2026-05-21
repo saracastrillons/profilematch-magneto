@@ -1195,6 +1195,7 @@ async function toggleJobStatus(jobId, isActive) {
 
 
 async function loadCandidates(jobId) {
+  
   showSection("recruiterCandidatesSection", document.querySelector("#recruiterMenu .side-btn:nth-child(4)"));
   const container = document.getElementById("recruiterCandidates");
   if (!container) return;
@@ -1279,7 +1280,7 @@ async function loadCandidates(jobId) {
           <option value="Rechazado" ${candidate.status === "Rechazado" ? "selected" : ""}>Rechazado</option>
         </select>
   
-        <button onclick="updateApplicationStatus(${candidate.application_id})">
+        <button onclick="updateApplicationStatus(${candidate.application_id}, ${jobId})">
           Actualizar estado
         </button>
   
@@ -1293,15 +1294,20 @@ async function loadCandidates(jobId) {
 
 async function updateApplicationStatus(applicationId, jobId) {
   const status = document.getElementById(`status-${applicationId}`)?.value;
+
   try {
     const res = await fetch(`${API}/recruiter/applications/${applicationId}/status`, {
       method: "PATCH",
       headers: authHeaders(),
       body: JSON.stringify({ status })
     });
+
     const data = await readJson(res);
-    showToast(data.message, "success");
-    if (res.ok) await loadCandidates(jobId);
+    showToast(data.message, res.ok ? "success" : "error");
+
+    if (res.ok) {
+      await loadCandidates(jobId);
+    }
   } catch (error) {
     showToast(error.message, "error");
   }
