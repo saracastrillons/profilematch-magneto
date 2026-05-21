@@ -1067,7 +1067,7 @@ app.get("/api/recruiter/jobs/:id/applications", requireAuth, requireRecruiter, a
 app.patch("/api/recruiter/applications/:id/status", requireAuth, requireRecruiter, async (req, res) => {
   try {
     const { status } = req.body;
-    const allowed = ["Postulado", "En revisión", "Entrevista", "Seleccionado", "Descartado"];
+    const allowed = ["Postulado", "En revisión", "Entrevista", "Seleccionado", "Rechazado", "Descartado"];
     if (!allowed.includes(status)) return res.status(400).json({ message: "Estado no válido." });
 
     const [rows] = await db.query(
